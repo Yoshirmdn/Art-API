@@ -32,27 +32,35 @@ const asyncHandler = (fn) => (req, res, next) => {
 };
 
 const validateArtworkData = (req, res, next) => {
-  const { judul, deskripsi, kategori, mine, tanggalPembuatan, alat } = req.body;
+  const { title, description, category, origin, artist, createdDate, status } =
+    req.body;
 
   const errors = [];
 
-  if (!judul || judul.trim().length === 0) {
-    errors.push("Judul harus diisi");
+  if (!title || title.trim().length === 0) {
+    errors.push("Title harus diisi");
   }
-  if (!deskripsi || deskripsi.trim().length === 0) {
-    errors.push("Deskripsi harus diisi");
+  if (!description || description.trim().length === 0) {
+    errors.push("Description harus diisi");
   }
-  if (!kategori || kategori.trim().length === 0) {
-    errors.push("Kategori harus diisi");
+  if (!category || category.trim().length === 0) {
+    errors.push("Category harus diisi");
   }
-  if (!mine || isNaN(parseInt(mine))) {
-    errors.push("Mine harus berupa angka");
+  if (!origin || origin.trim().length === 0) {
+    errors.push("Origin harus diisi");
   }
-  if (!tanggalPembuatan || !isValidDate(tanggalPembuatan)) {
-    errors.push("Tanggal pembuatan harus valid");
+  if (!artist || artist.trim().length === 0) {
+    errors.push("Artist harus diisi");
   }
-  if (!alat || alat.trim().length === 0) {
-    errors.push("Alat harus diisi");
+  if (!createdDate || !isValidDate(createdDate)) {
+    errors.push("Created date harus valid");
+  }
+  if (
+    status === undefined ||
+    status === null ||
+    ![0, 1, "0", "1"].includes(status)
+  ) {
+    errors.push("Status harus 0 atau 1");
   }
 
   if (errors.length > 0) {
@@ -245,6 +253,13 @@ app.get("/", (req, res) => {
           .post { background-color: #2980b9; }
           .put { background-color: #f39c12; }
           .delete { background-color: #e74c3c; }
+          .status-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+          }
         </style>
       </head>
       <body>
@@ -260,7 +275,8 @@ app.get("/", (req, res) => {
             <tr><th>URL</th><td><code>/artworks</code></td></tr>
             <tr><th>Query Parameters</th><td>
               <code>page</code> (optional): Halaman (default: 1)<br/>
-              <code>limit</code> (optional): Jumlah per halaman (default: 10)
+              <code>limit</code> (optional): Jumlah per halaman (default: 10)<br/>
+              <code>status</code> (optional): Filter berdasarkan status (0 atau 1)
             </td></tr>
             <tr><th>Response</th><td>JSONArray berisi karya seni dengan metadata pagination</td></tr>
           </table>
@@ -279,12 +295,13 @@ app.get("/", (req, res) => {
             <tr><th>Content-Type</th><td>multipart/form-data</td></tr>
             <tr><th>Request Body</th>
               <td>
-                <code>judul</code> (required): Judul karya<br/>
-                <code>deskripsi</code> (required): Deskripsi karya<br/>
-                <code>kategori</code> (required): Kategori karya<br/>
-                <code>mine</code> (required): Rating (angka)<br/>
-                <code>tanggalPembuatan</code> (required): Tanggal pembuatan<br/>
-                <code>alat</code> (required): Alat yang digunakan<br/>
+                <code>title</code> (required): Judul karya<br/>
+                <code>description</code> (required): Deskripsi karya<br/>
+                <code>category</code> (required): Kategori karya<br/>
+                <code>origin</code> (required): Asal karya<br/>
+                <code>artist</code> (required): Nama artist<br/>
+                <code>createdDate</code> (required): Tanggal pembuatan<br/>
+                <code>status</code> (required): Status karya (0 atau 1)<br/>
                 <code>image</code> (required): File gambar (max 5MB)
               </td>
             </tr>
@@ -314,13 +331,22 @@ app.get("/", (req, res) => {
             <tr><th>Response</th><td>File gambar dalam format yang sesuai</td></tr>
           </table>
 
+          <div class="status-info">
+            <strong>Status Field:</strong> 
+            <ul>
+              <li><code>0</code> = Tidak Aktif/Draft</li>
+              <li><code>1</code> = Aktif/Published</li>
+            </ul>
+          </div>
+
           <div style="margin-top: 40px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h3>📝 Catatan Penting:</h3>
             <ul>
               <li>Semua field yang bertanda (required) wajib diisi</li>
               <li>File gambar maksimal 5MB dengan format JPEG, PNG, atau GIF</li>
               <li>Tanggal harus dalam format yang valid (ISO 8601 recommended)</li>
-              <li>Rating (mine) harus berupa angka</li>
+              <li>Status harus berupa angka 0 atau 1</li>
+              <li>Origin dapat berupa nama negara, kota, atau daerah asal karya</li>
             </ul>
           </div>
         </div>
@@ -335,8 +361,17 @@ app.get(
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const statusFilter = req.query.status;
 
-    const allArtworks = await ArtworkService.readData();
+    let allArtworks = await ArtworkService.readData();
+
+    // Filter by status if provided
+    if (statusFilter !== undefined && [0, 1, "0", "1"].includes(statusFilter)) {
+      allArtworks = allArtworks.filter(
+        (artwork) => artwork.status == statusFilter
+      );
+    }
+
     const total = allArtworks.length;
     const artworks = allArtworks.slice(skip, skip + limit);
 
@@ -380,20 +415,28 @@ app.post(
       });
     }
 
-    const { judul, deskripsi, kategori, mine, tanggalPembuatan, alat } =
-      req.body;
+    const {
+      title,
+      description,
+      category,
+      origin,
+      artist,
+      createdDate,
+      status,
+    } = req.body;
     const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
     }`;
 
     const artworkData = {
-      judul: judul.trim(),
-      deskripsi: deskripsi.trim(),
-      kategori: kategori.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      category: category.trim(),
+      origin: origin.trim(),
+      artist: artist.trim(),
+      createdDate,
+      status: parseInt(status),
       image: imageUrl,
-      mine: parseInt(mine),
-      tanggalPembuatan,
-      alat: alat.trim(),
     };
 
     const newArtwork = await ArtworkService.create(artworkData);
@@ -419,8 +462,15 @@ app.put(
       });
     }
 
-    const { judul, deskripsi, kategori, mine, tanggalPembuatan, alat } =
-      req.body;
+    const {
+      title,
+      description,
+      category,
+      origin,
+      artist,
+      createdDate,
+      status,
+    } = req.body;
 
     let imageUrl = existingArtwork.image;
     if (req.file) {
@@ -432,13 +482,14 @@ app.put(
     }
 
     const artworkData = {
-      judul: judul.trim(),
-      deskripsi: deskripsi.trim(),
-      kategori: kategori.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      category: category.trim(),
+      origin: origin.trim(),
+      artist: artist.trim(),
+      createdDate,
+      status: parseInt(status),
       image: imageUrl,
-      mine: parseInt(mine),
-      tanggalPembuatan,
-      alat: alat.trim(),
     };
 
     const updatedArtwork = await ArtworkService.update(
@@ -500,7 +551,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler - Fixed to use proper Express syntax
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     error: "Route not found",
