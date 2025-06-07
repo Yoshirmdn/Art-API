@@ -208,6 +208,106 @@ const deleteOldImage = async (imageUrl) => {
 };
 
 // Routes
+
+app.get(
+  "/view",
+  asyncHandler(async (req, res) => {
+    const artworks = await ArtworkService.readData();
+
+    const html = `
+    <html>
+      <head>
+        <title>Galeri Karya Seni</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f2f2f2;
+            color: #333;
+          }
+          h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+          }
+          .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          .card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+          }
+          .card:hover {
+            transform: scale(1.02);
+          }
+          .card img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+          }
+          .card-body {
+            padding: 16px;
+          }
+          .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+          }
+          .artist {
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 4px;
+          }
+          .meta {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 10px;
+          }
+          .desc {
+            font-size: 0.9rem;
+            line-height: 1.4;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>🎨 Galeri Karya Seni</h1>
+        <div class="gallery">
+          ${artworks
+            .map(
+              (item) => `
+            <div class="card">
+              <img src="${item.image}" alt="${item.title}" />
+              <div class="card-body">
+                <div class="title">${item.title}</div>
+                <div class="artist">Oleh: ${item.artist}</div>
+                <div class="meta">${item.category} | ${
+                item.origin
+              } | ${new Date(item.createdDate).getFullYear()}</div>
+                <div class="desc">${item.description}</div>
+              </div>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      </body>
+    </html>
+  `;
+
+    res.send(html);
+  })
+);
+
 app.get("/", (req, res) => {
   res.send(`
     <html>
