@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "95c552e1-f0ed-43f2-85a7-5249df82704e",
+    "title": "Monalisa",
+    "description": "Lukisan terkenal karya Leonardo da Vinci yang menampilkan seorang wanita dengan senyum misterius. Dibuat antara tahun 1503-1519, lukisan ini menggunakan teknik sfumato dan menjadi salah satu karya seni paling terkenal di dunia.",
+    "category": "Lukisan",
+    "origin": "Italia",
+    "artist": "Leonardo da Vinci",
+    "image": "http://localhost:3000/uploads/artwork-1749456221406-426042271.jpeg",
+    "createdAt": "2025-06-09T08:03:41.409Z",
+    "updatedAt": "2025-06-09T08:03:41.410Z"
+  }
+]
