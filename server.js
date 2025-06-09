@@ -135,9 +135,17 @@ const deleteOldImage = async (imageUrl) => {
 
 // ---- API Endpoints ----
 // Route default
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the Artwork API" });
-});
+app.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const artworks = await ArtworkService.readData(); // ✅ fix: ganti readAllArtworks()
+    res.json({
+      message: "Welcome to the Artwork API",
+      data: artworks,
+    });
+  })
+);
+
 app.get(
   "/artworks",
   asyncHandler(async (req, res) => {
